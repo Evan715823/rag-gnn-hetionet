@@ -1,70 +1,125 @@
-\documentclass[11pt]{article}
+% ====================================================================
+%  COMP 559 Final Report — NeurIPS 2024 style
+%  GNN-Guided Meta-Path Retrieval for LLM Reasoning on Hetionet
+%  Compiles on Overleaf with pdfLaTeX + bibtex.
+% ====================================================================
+\documentclass[10pt]{article}
 
-% ---------- geometry & fonts ----------
-\usepackage[letterpaper,margin=1in]{geometry}
-\usepackage{mathptmx}          % Times-compatible Roman
+% ---------------- geometry (NeurIPS-like) ----------------
+\usepackage[letterpaper,
+            textwidth=5.5in, textheight=9in,
+            top=1in, left=1.5in]{geometry}
+
+% ---------------- fonts ----------------
 \usepackage[T1]{fontenc}
+\usepackage{newtxtext,newtxmath}
+\usepackage[scaled=0.92]{helvet}
 \usepackage{microtype}
 
-% ---------- bibliography ----------
+% ---------------- bibliography ----------------
 \usepackage[numbers,sort&compress]{natbib}
 \bibliographystyle{unsrtnat}
 
-% ---------- math & tables ----------
+% ---------------- math / tables ----------------
 \usepackage{amsmath,amssymb}
 \usepackage{booktabs}
 \usepackage{multirow}
 \usepackage{array}
-\usepackage{siunitx}
-\sisetup{detect-all, round-mode=places, round-precision=3}
 
-% ---------- graphics ----------
+% ---------------- graphics ----------------
 \usepackage{graphicx}
 \usepackage{tikz}
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
-\usetikzlibrary{arrows.meta, positioning, shapes.geometric, calc, fit, backgrounds}
-\usepackage{caption}
-\captionsetup{font=small, labelfont=bf, skip=6pt}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,calc,fit,backgrounds,
+                shadows.blur,patterns,decorations.pathreplacing}
+\usepgfplotslibrary{fillbetween}
+
+% ---------------- captions + section titles ----------------
+\usepackage[font=small,labelfont=bf,skip=5pt]{caption}
 \usepackage{subcaption}
+\usepackage{titlesec}
+\titleformat{\section}{\normalfont\Large\bfseries}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection}{0.5em}{}
+\titlespacing*{\section}{0pt}{10pt}{5pt}
+\titlespacing*{\subsection}{0pt}{8pt}{3pt}
 
-% ---------- misc ----------
-\usepackage{enumitem}
-\setlist[itemize]{leftmargin=*, itemsep=2pt, topsep=2pt}
+% ---------------- header / footer ----------------
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\fancyfoot[L]{\footnotesize COMP 559 \textbullet{} Machine Learning with Graphs \textbullet{} Spring 2026}
+\fancyfoot[R]{\thepage}
+
+% ---------------- colors ----------------
 \usepackage{xcolor}
-\definecolor{linkblue}{HTML}{1F4E79}
-\usepackage[colorlinks=true, linkcolor=black, citecolor=linkblue, urlcolor=linkblue]{hyperref}
+\definecolor{accent}{HTML}{1F4E79}
+\definecolor{clrInput}{HTML}{F5A962}   % orange
+\definecolor{clrGNN}{HTML}{4E8ABF}     % blue
+\definecolor{clrRetr}{HTML}{58B36E}    % green
+\definecolor{clrVerb}{HTML}{E6C463}    % yellow
+\definecolor{clrLLM}{HTML}{8E6FB0}     % purple
+\definecolor{clrOut}{HTML}{C0504D}     % red
+\definecolor{cLLM}{HTML}{F77B72}
+\definecolor{cGNN}{HTML}{6BA4D3}
+\definecolor{cKGE}{HTML}{65C38A}
+\definecolor{cOurs}{HTML}{2C3E8C}
 
-% ---------- custom commands ----------
+% ---------------- hyperref ----------------
+\usepackage[colorlinks=true,linkcolor=black,citecolor=accent,urlcolor=accent]{hyperref}
+
+% ---------------- misc ----------------
+\usepackage{xspace}
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=*,itemsep=2pt,topsep=2pt}
+\setlist[enumerate]{leftmargin=*,itemsep=2pt,topsep=2pt}
+
+% ---------------- short names ----------------
 \newcommand{\ours}{\textsc{GNN-RAG+LLM}\xspace}
 \newcommand{\gnno}{\textsc{GNN-only}\xspace}
 \newcommand{\llmo}{\textsc{LLM-only}\xspace}
 \newcommand{\kge}{\textsc{KGE}\xspace}
-\usepackage{xspace}
-\newcommand{\ctd}{\textsc{C\!-\!t\!-\!D}\xspace}
+\newcommand{\ctd}{\textsc{C--t--D}\xspace}
 
-% ---------- title ----------
-\title{\vspace{-1.5em}\Large GNN-Guided Meta-Path Retrieval for LLM Reasoning\\in Drug Repurposing on Hetionet}
+% ---------------- custom title block (NeurIPS-like) ----------------
+\makeatletter
+\renewcommand{\maketitle}{%
+  \begin{center}%
+    {\LARGE\bfseries \@title\par}\vspace{4pt}%
+    {\rule{0.9\textwidth}{0.5pt}}\vspace{8pt}%
+    {\large \@author\par}\vspace{4pt}%
+    {\small\itshape \@date\par}\vspace{6pt}%
+    {\rule{0.9\textwidth}{0.5pt}}%
+  \end{center}\vspace{6pt}%
+}
+\makeatother
+
+\title{GNN-Guided Meta-Path Retrieval for LLM Reasoning\\ in Drug Repurposing on Hetionet}
 
 \author{%
-  Jingwen Chen \\ Rice University \\ \texttt{jc380@rice.edu}
-  \and
-  Jingtao Wang \\ Rice University \\ \texttt{jw306@rice.edu}
-  \and
-  Shouyu Wang \\ Rice University \\ \texttt{sw188@rice.edu}
+  \begin{tabular}{c@{\hspace{2em}}c@{\hspace{2em}}c}
+    Jingwen Chen & Jingtao Wang & Shouyu Wang \\
+    Rice University & Rice University & Rice University \\
+    \texttt{jc380@rice.edu} & \texttt{jw306@rice.edu} & \texttt{sw188@rice.edu}
+  \end{tabular}%
 }
 
-\date{\small COMP 559 --- Machine Learning with Graphs --- Spring 2026}
+\date{COMP 559 --- Machine Learning with Graphs --- Spring 2026 Final Project}
 
+% ====================================================================
 \begin{document}
 \maketitle
+\thispagestyle{fancy}
 
-% ==================================================================
+% ====================================================================
 \begin{abstract}
-Drug repurposing requires not only accurate link prediction between chemical compounds and diseases, but also \emph{mechanistic explanations} that clinicians can audit. Heterogeneous graph neural networks (GNNs) excel at capturing topological regularities in biomedical knowledge graphs, yet they struggle to produce natural-language rationales grounded in domain semantics. We combine a heterogeneous GraphSAGE encoder with meta-path subgraph retrieval and a large language model (LLM) reasoner to bridge this structure-function gap on Hetionet, a multi-relational biomedical knowledge graph of 47{,}031 entities and 2.25M edges. On 150 held-out \ctd pairs we compare four methods under paired McNemar testing: \llmo (no retrieval), \gnno, a calibrated DistMult \kge baseline, and our \ours pipeline. \ours achieves $0.873$ accuracy ($95\%$ CI $[0.81,0.92]$), significantly outperforming \llmo ($0.553$, $p{=}4.7{\times}10^{-8}$), \gnno ($0.727$, $p{=}0.003$), and \kge ($0.787$, $p{=}0.04$). A top-$K$ ablation uncovers a clear saturation law: retrieval quality peaks at $K{=}5$ ($0.875$) and \emph{degrades} at $K{=}10$ ($0.825$) due to attention dilution. A LLM-as-judge faithfulness analysis reveals that only $52.3\%$ of generated rationales remain fully grounded in retrieved paths, exposing a concrete target for future closed-loop retrieval work. Code and per-case outputs are released at \url{https://github.com/Evan715823/rag-gnn-hetionet}.
+\noindent Drug repurposing requires not only accurate link prediction between chemical compounds and diseases, but also \emph{mechanistic explanations} that clinicians can audit. Heterogeneous graph neural networks (GNNs) excel at capturing topological regularities in biomedical knowledge graphs, yet they struggle to produce natural-language rationales grounded in domain semantics. We combine a heterogeneous GraphSAGE encoder with meta-path subgraph retrieval and a large language model (LLM) reasoner to bridge this structure-function gap on Hetionet, a multi-relational biomedical knowledge graph of 47{,}031 entities and 2.25M edges. On 150 held-out \ctd pairs we compare four methods under paired McNemar testing: \llmo (no retrieval), \gnno, a calibrated DistMult \kge baseline, and our \ours pipeline. \ours achieves $0.873$ accuracy ($95\%$ CI $[0.81,0.92]$), significantly outperforming \llmo ($0.553$, $p{=}4.7{\times}10^{-8}$), \gnno ($0.727$, $p{=}0.003$), and \kge ($0.787$, $p{=}0.04$). A top-$K$ ablation uncovers a clear saturation law: retrieval quality peaks at $K{=}5$ ($0.875$) and \emph{degrades} at $K{=}10$ ($0.825$) due to attention dilution. A LLM-as-judge faithfulness analysis reveals that only $52.3\%$ of generated rationales remain fully grounded in retrieved paths, exposing a concrete target for future closed-loop retrieval work. Code and per-case outputs are released at \url{https://github.com/Evan715823/rag-gnn-hetionet}.
+
+\vspace{4pt}\noindent\textbf{Keywords:} graph neural networks, retrieval-augmented generation, drug repurposing, Hetionet, LLM reasoning, faithfulness.
 \end{abstract}
 
-% ==================================================================
+% ====================================================================
 \section{Introduction}
 \label{sec:intro}
 
@@ -83,7 +138,7 @@ Our original proposal pursued a closed-loop variant in which a LLM judge would s
     \item A dual-call LLM-as-judge faithfulness analysis that uncovers a $\sim$48\% hallucination rate on the \emph{rationale} even when final predictions are correct, isolating a concrete target for future closed-loop work (\S\ref{sec:exp:faith},~\S\ref{sec:disc}).
 \end{enumerate}
 
-% ==================================================================
+% ====================================================================
 \section{Related Work}
 \label{sec:related}
 
@@ -99,33 +154,42 @@ GNN-RAG~\citep{mavromatis2024gnnrag} fuses a ReaRev-style encoder with LLaMA-2 f
 \textbf{LLM-as-judge.}
 \citet{zheng2023judge} established LLM-based evaluation as a scalable proxy for human judgement. We re-use this paradigm in \S\ref{sec:method:judge} to score the \emph{groundedness} of generated rationales rather than preference between competing answers.
 
-% ==================================================================
+% ====================================================================
 \section{Method}
 \label{sec:method}
 
 Figure~\ref{fig:pipeline} summarises the four-stage pipeline. Below we formalise each stage.
 
+% ---- Figure 1: Pipeline diagram with colour-coded stages and drop shadows
 \begin{figure}[t]
 \centering
 \begin{tikzpicture}[
-    node distance=7mm and 9mm,
-    box/.style={rectangle, draw, rounded corners=2pt, minimum height=11mm, minimum width=30mm, align=center, fill=gray!6, font=\small},
-    arrow/.style={-Stealth, thick, draw=black!60}
+    node distance=5.5mm and 8mm,
+    stage/.style={
+        rectangle, rounded corners=3pt,
+        draw=#1!70!black, line width=0.7pt,
+        top color=#1!30, bottom color=#1!55,
+        minimum height=13mm, minimum width=32mm,
+        align=center, font=\small,
+        drop shadow={shadow xshift=1.2pt,shadow yshift=-1.2pt,opacity=0.25,fill=black}
+    },
+    flow/.style={-{Stealth[length=2mm]}, line width=1.1pt, draw=black!55},
+    edgelbl/.style={font=\scriptsize\sffamily,fill=white,inner sep=1pt}
 ]
-\node[box] (q)    {Query\\$(c,d)\in\mathcal{C}\times\mathcal{D}$};
-\node[box, right=of q]   (gnn)  {Hetero. GNN\\\footnotesize SAGEConv $\circ$ to\_hetero};
-\node[box, right=of gnn] (retr) {Meta-path\\retrieval (top-$K$)};
-\node[box, below=of retr] (verb) {Path verbaliser\\\footnotesize template-based};
-\node[box, left=of verb] (llm)  {LLM reasoner\\\footnotesize grok-4-fast-reasoning};
-\node[box, left=of llm]  (out)  {$\{$pred, conf,\\rationale$\}$ + judge};
+\node[stage=clrInput] (q)               {\textbf{Query}\\[-1pt]\footnotesize $(c,d)\in\mathcal{C}{\times}\mathcal{D}$};
+\node[stage=clrGNN, right=of q] (gnn)   {\textbf{Hetero.\ GNN}\\[-1pt]\footnotesize SAGEConv$\,\circ\,$\texttt{to\_hetero}};
+\node[stage=clrRetr, right=of gnn] (retr){\textbf{Retrieval}\\[-1pt]\footnotesize top-$K$ meta-paths};
+\node[stage=clrVerb, below=of retr] (verb){\textbf{Verbaliser}\\[-1pt]\footnotesize template-based};
+\node[stage=clrLLM, left=of verb] (llm) {\textbf{LLM reasoner}\\[-1pt]\footnotesize \texttt{grok-4-fast-reasoning}};
+\node[stage=clrOut, left=of llm] (out)  {\textbf{Output $+$ judge}\\[-1pt]\footnotesize $\{$pred, conf, rationale$\}$};
 
-\draw[arrow] (q)    -- (gnn);
-\draw[arrow] (gnn)  -- (retr) node[midway, above, font=\scriptsize] {$\{\mathbf{h}_v\}$};
-\draw[arrow] (retr) -- (verb) node[midway, right=1pt, font=\scriptsize] {paths};
-\draw[arrow] (verb) -- (llm)  node[midway, above, font=\scriptsize] {prompt};
-\draw[arrow] (llm)  -- (out)  node[midway, above, font=\scriptsize] {JSON};
+\draw[flow] (q)    -- (gnn);
+\draw[flow] (gnn)  -- (retr)   node[edgelbl,midway,above] {$\{\mathbf{h}_v\}$};
+\draw[flow] (retr) -- (verb)   node[edgelbl,midway,right=1pt] {paths};
+\draw[flow] (verb) -- (llm)    node[edgelbl,midway,above] {prompt};
+\draw[flow] (llm)  -- (out)    node[edgelbl,midway,above] {JSON};
 \end{tikzpicture}
-\caption{End-to-end pipeline. The heterogeneous GNN provides node embeddings used to score candidate meta-path instances; top-$K$ paths are verbalised and handed to a reasoning LLM, whose rationale is separately audited by a judge.}
+\caption{End-to-end pipeline. Colour-coded stages correspond to the subsections of \S\ref{sec:method}. The heterogeneous GNN supplies node embeddings $\{\mathbf{h}_v\}$ used to rank candidate meta-path instances; the top-$K$ paths are verbalised and handed to a reasoning LLM, whose rationale is separately audited by a judge.}
 \label{fig:pipeline}
 \end{figure}
 
@@ -148,7 +212,7 @@ Scores are given by inner product $\mathrm{score}(c,d) = \mathbf{h}_c^{\top}\mat
 \label{sec:method:retrieval}
 Following \citet{himmelstein2017}, we define nine biologically-motivated meta-paths (Table~\ref{tab:metapaths}). For a query $(c,d)$, we enumerate every instantiation of each template using precomputed forward adjacency dictionaries, giving a candidate set $\mathcal{P}(c,d)$. Each path $p=(v_0,v_1,\ldots,v_L)$ with $v_0{=}c,\,v_L{=}d$ is scored by the mean cosine similarity between consecutive node embeddings:
 \begin{equation}
-s(p) = \frac{1}{L}\sum_{i=0}^{L-1} \cos(\mathbf{h}_{v_i},\mathbf{h}_{v_{i+1}}).
+s(p) = \frac{1}{L}\sum_{i=0}^{L-1} \cos\!\bigl(\mathbf{h}_{v_i},\,\mathbf{h}_{v_{i+1}}\bigr).
 \label{eq:pathscore}
 \end{equation}
 The top-$K$ scoring paths are forwarded to the verbaliser. Eq.~\eqref{eq:pathscore} is the open-loop analogue of a learned retriever; \S\ref{sec:fut} discusses closing the loop.
@@ -160,7 +224,8 @@ The top-$K$ scoring paths are forwarded to the verbaliser. Eq.~\eqref{eq:pathsco
 \label{tab:metapaths}
 \begin{tabular}{@{}lll@{}}
 \toprule
-ID & Template & Biological interpretation \\ \midrule
+ID & Template & Biological interpretation \\
+\midrule
 CpD      & Compound $\to$ Disease (palliates)                               & symptomatic precedent \\
 CbGaD    & Compound-binds-Gene-associates-Disease                           & target-driven \\
 CuGuD    & Compound-up-Gene-up-Disease                                      & co-upregulation \\
@@ -185,7 +250,7 @@ We use \texttt{grok-4-fast-reasoning}~\citep{xai2024grok} through the xAI chat-c
 \label{sec:method:judge}
 A second LLM call audits the rationale independently of the prediction: given the exact retrieved paths and the model's rationale, the judge returns $\{\texttt{faithful}\in\{\mathrm{true},\mathrm{false}\},\texttt{invented\_entities}\}$. This follows the LLM-as-judge methodology of \citet{zheng2023judge} and operationalises the faithfulness metric in \S\ref{sec:exp:faith}.
 
-% ==================================================================
+% ====================================================================
 \section{Experiments}
 \label{sec:exp}
 
@@ -200,7 +265,8 @@ Hetionet~v1.0~\citep{himmelstein2017} contains $47{,}031$ nodes across $11$ type
 \label{tab:hetionet}
 \begin{tabular}{@{}lrlr@{}}
 \toprule
-Node type & Count & Relation (undirected)          & Count \\ \midrule
+Node type & Count & Relation (undirected)          & Count \\
+\midrule
 Gene                & 20{,}945 & Gene-Biological Process         & 559{,}504 \\
 Biological Process  & 11{,}381 & Anatomy-expresses-Gene          & 526{,}407 \\
 Side Effect         & 5{,}734  & Gene-interacts-Gene             & 294{,}328 \\
@@ -230,41 +296,53 @@ Table~\ref{tab:main} and Figure~\ref{fig:bars} report accuracy with $95\%$ boots
 \begin{table}[t]
 \centering
 \small
-\caption{Main results on $150$ held-out \ctd pairs ($75{+}/75{-}$). Accuracy with $95\%$ bootstrap CI; McNemar $p$-values versus \ours, with \texttt{*} $p{<}0.05$, \texttt{**} $p{<}0.01$, \texttt{***} $p{<}0.001$.}
+\caption{Main results on $150$ held-out \ctd pairs ($75{+}/75{-}$). Accuracy with $95\%$ bootstrap CI; McNemar $p$-values versus \ours, with \texttt{*}\,$p{<}0.05$, \texttt{**}\,$p{<}0.01$, \texttt{***}\,$p{<}0.001$.}
 \label{tab:main}
 \begin{tabular}{@{}lccc@{}}
 \toprule
-Method & Accuracy & $95\%$ CI & vs \ours \\ \midrule
+Method & Accuracy & $95\%$ CI & vs \ours \\
+\midrule
 \llmo                           & 0.553 & [0.473, 0.633] & $p{=}4.7{\times}10^{-8}$\,\texttt{***} \\
 \gnno                           & 0.727 & [0.653, 0.793] & $p{=}0.003$\,\texttt{**} \\
 \kge (DistMult, raw thr.\ $>0$) & 0.500 & [0.420, 0.580] & --- \\
 \kge (DistMult, calibrated)     & 0.787 & [0.720, 0.853] & $p{=}0.043$\,\texttt{*} \\
-\ours                           & \textbf{0.873} & \textbf{[0.813, 0.920]} & --- \\ \bottomrule
+\rowcolor{accent!8}\ours        & \textbf{0.873} & \textbf{[0.813, 0.920]} & --- \\
+\bottomrule
 \end{tabular}
 \end{table}
 
+% ---- Figure 2: Per-method coloured bar chart
 \begin{figure}[t]
 \centering
 \begin{tikzpicture}
 \begin{axis}[
-    width=0.80\textwidth, height=0.32\textwidth,
+    width=\linewidth, height=0.34\textwidth,
     ybar, ymin=0, ymax=1.02,
     ylabel={Accuracy}, ylabel style={font=\small}, ytick={0,0.25,0.5,0.75,1.0},
-    symbolic x coords={{LLM-only},{GNN-only},{KGE (calib.)},{GNN-RAG+LLM}},
+    ymajorgrids, grid style={dashed,gray!30},
+    symbolic x coords={{LLM-only},{GNN-only},{KGE (calib.)},{GNN-RAG+LLM (ours)}},
     xtick=data, x tick label style={font=\small},
-    bar width=34pt, enlarge x limits=0.15,
-    nodes near coords, nodes near coords style={font=\scriptsize, /pgf/number format/.cd, fixed, precision=3},
-    error bars/.cd, y dir=both, y explicit,
+    bar width=38pt, enlarge x limits=0.17,
+    axis lines*=left,
+    every axis plot/.append style={
+        error bars/.cd, y dir=both, y explicit,
+        error bar style={line width=0.9pt,black!60}
+    },
+    nodes near coords, nodes near coords style={font=\scriptsize,/pgf/number format/.cd,fixed,precision=3},
 ]
-\addplot+[ybar, fill=blue!25, draw=blue!60!black] coordinates {
-    ({LLM-only},    0.553) +- (0.080, 0.080)
-    ({GNN-only},    0.727) +- (0.074, 0.066)
-    ({KGE (calib.)},0.787) +- (0.067, 0.066)
-    ({GNN-RAG+LLM}, 0.873) +- (0.060, 0.047)
-};
+
+\addplot[ybar,fill=cLLM,draw=cLLM!60!black,bar width=38pt] coordinates {({LLM-only},0.553)    +- (0.080,0.080)};
+\addplot[ybar,fill=cGNN,draw=cGNN!60!black,bar width=38pt] coordinates {({GNN-only},0.727)    +- (0.074,0.066)};
+\addplot[ybar,fill=cKGE,draw=cKGE!60!black,bar width=38pt] coordinates {({KGE (calib.)},0.787)+- (0.067,0.066)};
+\addplot[ybar,fill=cOurs,draw=cOurs!70!black,bar width=38pt,
+         postaction={pattern=north east lines,pattern color=white}]
+  coordinates {({GNN-RAG+LLM (ours)},0.873) +- (0.060,0.047)};
+
+\draw[dashed,red!60!black,line width=0.8pt] (axis cs:{LLM-only},0.5) -- (axis cs:{GNN-RAG+LLM (ours)},0.5);
+\node[red!60!black,font=\scriptsize,anchor=east] at (axis cs:{LLM-only},0.5) {chance\ \ };
 \end{axis}
 \end{tikzpicture}
-\caption{Accuracy and $95\%$ bootstrap CIs on the $N{=}150$ evaluation set. \ours strictly dominates every baseline, and all pairwise differences against it are significant under McNemar's test (Table~\ref{tab:main}).}
+\caption{Accuracy and $95\%$ bootstrap CIs on the $N{=}150$ evaluation set. \ours (hatched, dark blue) strictly dominates every baseline, and all pairwise differences against it are significant under McNemar's test (Table~\ref{tab:main}). Red dashed line marks random-guess accuracy.}
 \label{fig:bars}
 \end{figure}
 
@@ -275,36 +353,54 @@ Three observations follow from Table~\ref{tab:main}. \textbf{First}, DistMult wi
 
 We vary the number of paths handed to the LLM from $K{=}0$ (LLM-only) to $K{=}10$, holding all other components fixed. The result (Figure~\ref{fig:ablation}) exhibits a striking non-monotonic shape: accuracy rises by $23$ percentage points from $K{=}0$ to $K{=}1$, saturates at $K{=}5$, and \emph{declines} at $K{=}10$.
 
+% ---- Figure 3: Line chart with area fill and peak marker
 \begin{figure}[t]
 \centering
 \begin{tikzpicture}
 \begin{axis}[
-    width=0.70\textwidth, height=0.34\textwidth,
+    width=\linewidth, height=0.34\textwidth,
     xlabel={Number of retrieved paths $K$},
     ylabel={Accuracy},
-    ymin=0.45, ymax=0.95,
+    ymin=0.45, ymax=0.96,
     xmin=-0.5, xmax=10.5,
     xtick={0,1,3,5,10},
-    grid=both, grid style={dashed, gray!30},
-    mark size=2.5pt, thick,
+    ytick={0.5,0.6,0.7,0.8,0.9},
+    ymajorgrids, grid style={dashed,gray!25},
+    axis lines*=left,
     label style={font=\small}, tick label style={font=\small},
 ]
-\addplot[color=blue!70!black, mark=*, line width=1.2pt] coordinates {
-    (0,  0.525)
-    (1,  0.750)
-    (3,  0.800)
-    (5,  0.875)
-    (10, 0.825)
-};
-\node[anchor=south, font=\scriptsize] at (axis cs:0,0.525) {0.525};
-\node[anchor=south, font=\scriptsize] at (axis cs:1,0.750) {0.750};
-\node[anchor=south, font=\scriptsize] at (axis cs:3,0.800) {0.800};
-\node[anchor=south, font=\scriptsize] at (axis cs:5,0.875) {\textbf{0.875}};
-\node[anchor=south, font=\scriptsize] at (axis cs:10,0.825) {0.825};
-\draw[dashed, red!70, thick] (axis cs:5,0.45) -- (axis cs:5,0.92) node[above, font=\scriptsize, red!70!black] {optimal $K^\star$};
+
+% area under the curve
+\addplot[draw=none,fill=accent!15,domain=0:10,forget plot]
+  coordinates {(0,0.525) (1,0.750) (3,0.800) (5,0.875) (10,0.825)}
+  \closedcycle;
+
+% main line
+\addplot[color=accent,line width=1.4pt,mark=*,mark size=2.8pt,
+         mark options={fill=accent!80,draw=accent!60!black,line width=0.6pt}]
+  coordinates {
+    (0,0.525) (1,0.750) (3,0.800) (5,0.875) (10,0.825)
+  };
+
+% peak marker
+\addplot[color=red!80!black,mark=star,mark size=7pt,only marks,
+         mark options={line width=1.2pt}]
+  coordinates {(5,0.875)};
+
+% callouts
+\node[anchor=north,font=\scriptsize,text=accent]  at (axis cs:0,0.525) {0.525};
+\node[anchor=north,font=\scriptsize,text=accent]  at (axis cs:1,0.750) {0.750};
+\node[anchor=north,font=\scriptsize,text=accent]  at (axis cs:3,0.800) {0.800};
+\node[anchor=south,font=\scriptsize\bfseries,text=red!80!black] at (axis cs:5,0.895) {$K^\star{=}5\;\; 0.875$};
+\node[anchor=north,font=\scriptsize,text=accent]  at (axis cs:10,0.825) {0.825};
+
+% drop annotation
+\draw[->,red!70!black,thick,>=Stealth]
+  (axis cs:5.8,0.875) to[bend left=25] (axis cs:9.5,0.840);
+\node[red!70!black,font=\scriptsize\itshape] at (axis cs:7.7,0.92) {$-5$\,pts drop};
 \end{axis}
 \end{tikzpicture}
-\caption{Top-$K$ retrieval ablation ($N{=}40$ per configuration, $20{+}/20{-}$). Accuracy saturates at $K^\star{=}5$ and drops $5$ points at $K{=}10$. We attribute the decline to attention dilution: redundant or weakly scored paths crowd out the most informative chain.}
+\caption{Top-$K$ retrieval ablation ($N{=}40$ per configuration, $20{+}/20{-}$). Accuracy saturates at $K^\star{=}5$ (red star) and drops five points at $K{=}10$. We attribute the decline to attention dilution: redundant or weakly scored paths crowd out the most informative chain.}
 \label{fig:ablation}
 \end{figure}
 
@@ -327,23 +423,25 @@ Table~\ref{tab:buckets} partitions all $150$ test predictions by which method(s)
 \label{tab:buckets}
 \begin{tabular}{@{}lr@{\hspace{3em}}lr@{}}
 \toprule
-Bucket & Count & Bucket & Count \\ \midrule
+Bucket & Count & Bucket & Count \\
+\midrule
 \gnno \& \ours both right          & 95 & retrieval helped (\ours over \llmo) & \textbf{61} \\
 \gnno wrong, \ours right (rescue)  & 36 & retrieval hurt   (\ours over \llmo) & 13 \\
 \gnno right, \ours wrong           & 14 & ratio                                 & $4.7\times$ \\
-Both wrong                         & 5  & & \\ \bottomrule
+Both wrong                         & 5  & & \\
+\bottomrule
 \end{tabular}
 \end{table}
 
-The most informative row is the \emph{rescue} bucket: $36$ out of $41$ cases where the GNN was wrong were corrected by LLM reasoning over the retrieved paths. A recurrent rescue pattern is the $\text{CrCtD}$ meta-path (analogue rescue): if an approved compound $c'$ structurally resembling $c$ is known to treat $d$, the LLM promotes the prediction. Conversely, the $14$ \emph{regressions} ($c$-correct-by-GNN, $c$-wrong-by-\ours) concentrate on high-GNN-score pairs where a single weak retrieved path (often a single-hop $\text{CbGaD}$ with $s(p){<}0$) mislead the LLM into an over-confident positive prediction. The ratio of \texttt{retrieval\_helped}:\texttt{retrieval\_hurt}$\,=\,61{:}13\,=\,4.7{\times}$ is a tidy summary of net benefit---and a useful fairness figure for future work that compares alternative retrievers.
+The most informative row is the \emph{rescue} bucket: $36$ out of $41$ cases where the GNN was wrong were corrected by LLM reasoning over the retrieved paths. A recurrent rescue pattern is the $\text{CrCtD}$ meta-path (analogue rescue): if an approved compound $c'$ structurally resembling $c$ is known to treat $d$, the LLM promotes the prediction. Conversely, the $14$ \emph{regressions} (\gnno-correct but \ours-wrong) concentrate on high-GNN-score pairs where a single weak retrieved path (often a single-hop $\text{CbGaD}$ with $s(p){<}0$) misleads the LLM into an over-confident positive prediction. The ratio of \texttt{retrieval\_helped}:\texttt{retrieval\_hurt}$\,=\,61{:}13\,=\,4.7{\times}$ is a tidy summary of net benefit---and a useful fairness figure for future work that compares alternative retrievers.
 
-% ==================================================================
+% ====================================================================
 \section{Case Study: Corticosteroid Repurposing via Analogue Rescue}
 \label{sec:case}
 
 To illustrate the interpretive payoff of our pipeline, we ran the DDR1-centric case-study script (\texttt{experiments/case\_study\_ddr1.py}). DDR1 is a kinase whose therapeutic relevance was recently validated by \citet{zhavoronkov2019ddr1} using generative deep-learning; it is the target proposed in our original project motivation. For the most embedding-similar (compound, disease) pair under the trained encoder---Desonide and allergic rhinitis---the retriever returned eight paths. Seven of them are structural analogues via the \textsc{CrCtD} meta-path (Dexamethasone, Triamcinolone, Betamethasone, Methylprednisolone, Hydrocortisone, Prednisolone, Flunisolide), matching the well-documented fact that Desonide is a topical corticosteroid. The eighth path is mechanistic: \emph{Desonide binds NR3C1 (the glucocorticoid receptor) which interacts with NFKB1, itself associated with allergic rhinitis}. The LLM returned \texttt{\{prediction:"yes", confidence:0.90\}} with the rationale \emph{``Desonide is structurally similar to multiple corticosteroids, all of which treat allergic rhinitis $[\ldots]$ indicating a mechanistic pathway via glucocorticoid receptor modulation of inflammation.''} The judge flagged this rationale as fully faithful: every named entity appears in the retrieved subgraph. This is the interpretive output a clinician can actually use, and neither the GNN (which outputs a scalar probability) nor the LLM alone (which hallucinates unsupported entities, \S\ref{sec:exp:faith}) produces it.
 
-% ==================================================================
+% ====================================================================
 \section{Discussion}
 \label{sec:disc}
 
@@ -353,7 +451,7 @@ To illustrate the interpretive payoff of our pipeline, we ran the DDR1-centric c
 
 \textbf{Faithfulness is the bottleneck.} A $52\%$ faithfulness rate is unacceptable in any clinical setting, and yet the final predictions remain $87\%$ accurate. This is a warning: the pipeline is \emph{right for the wrong reasons} almost half the time. Bridging this gap is not a matter of larger models; frontier models like grok-4-fast-reasoning already know they should ``only use provided entities'' yet still hallucinate. Architectural interventions---constrained decoding against the entity vocabulary, self-consistency filtering with the judge, or the closed-loop RL reward of our original proposal---are all plausible fixes (\S\ref{sec:fut}).
 
-% ==================================================================
+% ====================================================================
 \section{Limitations and Future Work}
 \label{sec:fut}
 
@@ -366,18 +464,18 @@ The present study has four main limitations, each of which points to a specific 
     \item \textbf{Scale.} PrimeKG~\citep{chandak2022primekg}, $2.7\times$ larger than Hetionet, would stress-test the saturation phenomenon and the judge's scalability. We view this as the clearest path to a top-venue submission.
 \end{enumerate}
 
-% ==================================================================
+% ====================================================================
 \section{Conclusion}
 \label{sec:conclusion}
 We have presented a rigorous, reproducible GraphRAG pipeline for Hetionet-based drug repurposing. A heterogeneous GNN supplies the retrieval prior for meta-path subgraph selection; a reasoning LLM supplies the human-readable rationale; a second LLM call supplies the faithfulness audit. On $150$ paired test examples the pipeline is $+15$ accuracy points above the strongest non-RAG baseline with McNemar $p{<}0.01$. A top-$K$ ablation uncovers a sharp saturation law that reframes closed-loop retrieval as a problem of \emph{score calibration} rather than capacity; a faithfulness audit isolates the open problem for the next phase of this work.
 
 \paragraph{Code and data.}
-All code, model checkpoints recipes, per-case predictions and bootstrap scripts are at \url{https://github.com/Evan715823/rag-gnn-hetionet}.
+All code, model-checkpoint recipes, per-case predictions and bootstrap scripts are at \url{https://github.com/Evan715823/rag-gnn-hetionet}.
 
 \paragraph{Author contributions.}
 \textbf{J.\ Chen} led the GNN and retrieval implementation and the writing of \S\S\ref{sec:method}--\ref{sec:exp:main}. \textbf{J.\ Wang} ran the ablation and error-analysis experiments and drafted \S\ref{sec:exp:ablation}--\S\ref{sec:exp:errors}. \textbf{S.\ Wang} designed the LLM prompt and judge, curated the DDR1 case study and drafted \S\S\ref{sec:related},\ref{sec:case},\ref{sec:fut}. All authors reviewed and edited the final manuscript.
 
-% ==================================================================
+% ====================================================================
 \bibliography{references}
 
 \end{document}
