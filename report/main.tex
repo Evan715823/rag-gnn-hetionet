@@ -3,33 +3,20 @@
 %  GNN-Guided Meta-Path Retrieval for LLM Reasoning on Hetionet
 %  Compiles on Overleaf with pdfLaTeX + bibtex.
 % ====================================================================
-\documentclass[10pt]{article}
+\documentclass{article}
 
-% ---------------- geometry (NeurIPS-like) ----------------
-\usepackage[letterpaper,
-            textwidth=5.5in, textheight=9in,
-            top=1in, left=1.5in]{geometry}
-
-% ---------------- colour (MUST be before tikz so [table] option takes) ----
+% ---- colour (MUST be before tikz so [table] option takes) -----------------
 \usepackage[table,dvipsnames]{xcolor}
 
-% ---------------- fonts ----------------
-\usepackage[T1]{fontenc}
-\usepackage{newtxtext,newtxmath}
-\usepackage[scaled=0.92]{helvet}
-\usepackage{microtype}
+% ---- official NeurIPS 2024 style (provided in report/neurips_2024.sty) ----
+\usepackage[preprint]{neurips_2024}
 
-% ---------------- bibliography ----------------
-\usepackage[numbers,sort&compress]{natbib}
-\bibliographystyle{unsrtnat}
-
-% ---------------- math / tables ----------------
-\usepackage{amsmath,amssymb}
+% ---- tables / math --------------------------------------------------------
 \usepackage{booktabs}
 \usepackage{multirow}
 \usepackage{array}
 
-% ---------------- graphics ----------------
+% ---- graphics -------------------------------------------------------------
 \usepackage{graphicx}
 \usepackage{tikz}
 \usepackage{pgfplots}
@@ -38,79 +25,47 @@
                 shadows.blur,patterns,decorations.pathreplacing}
 \usepgfplotslibrary{fillbetween}
 
-% ---------------- captions + section titles ----------------
-\usepackage[font=small,labelfont=bf,skip=5pt]{caption}
-\usepackage{subcaption}
-\usepackage{titlesec}
-\titleformat{\section}{\normalfont\Large\bfseries}{\thesection}{0.6em}{}
-\titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection}{0.5em}{}
-\titlespacing*{\section}{0pt}{10pt}{5pt}
-\titlespacing*{\subsection}{0pt}{8pt}{3pt}
+% ---- microtype + hyperref -------------------------------------------------
+\usepackage{microtype}
+\usepackage[colorlinks=true,linkcolor=black,citecolor=blue!50!black,
+            urlcolor=blue!50!black]{hyperref}
 
-% ---------------- header / footer ----------------
-\usepackage{fancyhdr}
-\pagestyle{fancy}
-\fancyhf{}
-\renewcommand{\headrulewidth}{0pt}
-\fancyfoot[L]{\footnotesize COMP 559 \textbullet{} Machine Learning with Graphs \textbullet{} Spring 2026}
-\fancyfoot[R]{\thepage}
-
-% ---------------- named colours (xcolor already loaded above) ----------
-\definecolor{accent}{HTML}{1F4E79}
-\definecolor{clrInput}{HTML}{F5A962}   % orange
-\definecolor{clrGNN}{HTML}{4E8ABF}     % blue
-\definecolor{clrRetr}{HTML}{58B36E}    % green
-\definecolor{clrVerb}{HTML}{E6C463}    % yellow
-\definecolor{clrLLM}{HTML}{8E6FB0}     % purple
-\definecolor{clrOut}{HTML}{C0504D}     % red
-\definecolor{cLLM}{HTML}{F77B72}
-\definecolor{cGNN}{HTML}{6BA4D3}
-\definecolor{cKGE}{HTML}{65C38A}
-\definecolor{cOurs}{HTML}{2C3E8C}
-
-% ---------------- hyperref ----------------
-\usepackage[colorlinks=true,linkcolor=black,citecolor=accent,urlcolor=accent]{hyperref}
-
-% ---------------- misc ----------------
+% ---- misc macros ----------------------------------------------------------
 \usepackage{xspace}
-\usepackage{enumitem}
-\setlist[itemize]{leftmargin=*,itemsep=2pt,topsep=2pt}
-\setlist[enumerate]{leftmargin=*,itemsep=2pt,topsep=2pt}
-
-% ---------------- short names ----------------
 \newcommand{\ours}{\textsc{GNN-RAG+LLM}\xspace}
 \newcommand{\gnno}{\textsc{GNN-only}\xspace}
 \newcommand{\llmo}{\textsc{LLM-only}\xspace}
 \newcommand{\kge}{\textsc{KGE}\xspace}
 \newcommand{\ctd}{\textsc{CtD}\xspace}
 
-% ---------------- custom title block (NeurIPS-like) ----------------
-\makeatletter
-\renewcommand{\maketitle}{%
-  \begin{center}%
-    {\LARGE\bfseries \@title\par}\vspace{4pt}%
-    {\rule{0.9\textwidth}{0.5pt}}\vspace{8pt}%
-    {\large \@author\par}\vspace{4pt}%
-    {\small\itshape \@date\par}\vspace{6pt}%
-    {\rule{0.9\textwidth}{0.5pt}}%
-  \end{center}\vspace{6pt}%
-}
-\makeatother
+% ---- named colours --------------------------------------------------------
+\definecolor{accent}{HTML}{1F4E79}
+\definecolor{clrInput}{HTML}{F5A962}
+\definecolor{clrGNN}{HTML}{4E8ABF}
+\definecolor{clrRetr}{HTML}{58B36E}
+\definecolor{clrVerb}{HTML}{E6C463}
+\definecolor{clrLLM}{HTML}{8E6FB0}
+\definecolor{clrOut}{HTML}{C0504D}
+\definecolor{cLLM}{HTML}{F77B72}
+\definecolor{cGNN}{HTML}{6BA4D3}
+\definecolor{cKGE}{HTML}{65C38A}
+\definecolor{cOurs}{HTML}{2C3E8C}
 
+% ---- title / authors (NeurIPS three-column style) -------------------------
 \title{GNN-Guided Meta-Path Retrieval for LLM Reasoning\\ in Drug Repurposing on Hetionet}
 
 \author{%
-  Jingwen Chen\quad Jingtao Wang\quad Shouyu Wang\\[2pt]
-  {\small Rice University}\\[1pt]
-  {\small\texttt{\{jc380,\,jw306,\,sw188\}@rice.edu}}%
+  Jingwen Chen \quad Jingtao Wang \quad Shouyu Wang\\[2pt]
+  Rice University\\[1pt]
+  \texttt{\{jc380,\,jw306,\,sw188\}@rice.edu}\\[3pt]
+  \textit{COMP 559 --- Machine Learning with Graphs --- Spring 2026 Final Project}%
 }
 
-\date{COMP 559 --- Machine Learning with Graphs --- Spring 2026 Final Project}
+\date{}
 
 % ====================================================================
 \begin{document}
 \maketitle
-\thispagestyle{fancy}
 
 % ====================================================================
 \begin{abstract}
@@ -129,8 +84,12 @@ Despite their dominance on structural benchmarks, graph neural networks exhibit 
 
 Recent advances in retrieval-augmented generation (RAG)~\citep{lewis2020rag} and graph-aware LLM reasoning~\citep{mavromatis2024gnnrag,sun2024tog} suggest a different path: rather than train the GNN to absorb semantic knowledge, let the GNN \emph{retrieve} candidate subgraphs and hand the interpretation to a modern large language model. \citet{hays2026raggnn} quantified this complementarity, reporting that topology contributes roughly $77.3\%$ of predictive information while retrieved text adds $8.6\%$ of non-redundant signal---small in magnitude but critical for interpretation. Their architecture, however, remains open-loop: retrieval is governed by a fixed semantic-similarity rule and is never adapted to the downstream task.
 
-Our original proposal pursued a closed-loop variant in which a LLM judge would supply a reinforcement-learning reward to the retriever. The present paper retreats from that ambition in order to deliver a rigorous empirical baseline that the closed-loop idea must eventually beat. We implement GraphRAG end-to-end on Hetionet, compare it to three strong baselines under paired significance testing, and quantify both where retrieval helps and where the LLM's interpretive layer introduces new failure modes. Concretely, our contributions are:
+Our original proposal pursued a closed-loop variant in which a LLM judge would supply a reinforcement-learning reward to the retriever. The present paper retreats from that ambition in order to deliver a rigorous empirical baseline that the closed-loop idea must eventually beat. We implement GraphRAG end-to-end on Hetionet, compare it to three strong baselines under paired significance testing, and quantify both where retrieval helps and where the LLM's interpretive layer introduces new failure modes.
 
+\paragraph{Main challenges.}
+Delivering this pipeline exposed four challenges whose resolutions are the backbone of our method and experimental design: (C1) training a heterogeneous GNN on only $605$ supervised \ctd edges without collapsing on the long tail of rare compounds; (C2) designing a retriever that trades off meta-path diversity against prompt length in a way that a downstream LLM can actually exploit; (C3) calibrating a knowledge-graph-embedding baseline to a binary classification decision without access to a labelled calibration set; and (C4) evaluating LLM \emph{rationale quality} when the answer is correct but the reasoning may not be, a problem unique to retrieval-augmented systems and rarely addressed in the GraphRAG literature. Each is resolved in turn in \S\ref{sec:method}--\S\ref{sec:exp}.
+
+\paragraph{Contributions.}
 \begin{enumerate}[label=(\roman*)]
     \item An open-source, end-to-end GraphRAG pipeline for Hetionet combining heterogeneous GraphSAGE, meta-path subgraph retrieval, path verbalisation and Grok-based LLM reasoning (\S\ref{sec:method}).
     \item A paired $N{=}150$ comparison of four methods---\llmo, \gnno, calibrated \kge, and \ours---with bootstrap confidence intervals and McNemar significance tests (\S\ref{sec:exp:main}).
