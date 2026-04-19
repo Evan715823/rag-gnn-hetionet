@@ -10,6 +10,9 @@
             textwidth=5.5in, textheight=9in,
             top=1in, left=1.5in]{geometry}
 
+% ---------------- colour (MUST be before tikz so [table] option takes) ----
+\usepackage[table,dvipsnames]{xcolor}
+
 % ---------------- fonts ----------------
 \usepackage[T1]{fontenc}
 \usepackage{newtxtext,newtxmath}
@@ -52,8 +55,7 @@
 \fancyfoot[L]{\footnotesize COMP 559 \textbullet{} Machine Learning with Graphs \textbullet{} Spring 2026}
 \fancyfoot[R]{\thepage}
 
-% ---------------- colors ----------------
-\usepackage{xcolor}
+% ---------------- named colours (xcolor already loaded above) ----------
 \definecolor{accent}{HTML}{1F4E79}
 \definecolor{clrInput}{HTML}{F5A962}   % orange
 \definecolor{clrGNN}{HTML}{4E8ABF}     % blue
@@ -80,7 +82,7 @@
 \newcommand{\gnno}{\textsc{GNN-only}\xspace}
 \newcommand{\llmo}{\textsc{LLM-only}\xspace}
 \newcommand{\kge}{\textsc{KGE}\xspace}
-\newcommand{\ctd}{\textsc{C--t--D}\xspace}
+\newcommand{\ctd}{\textsc{CtD}\xspace}
 
 % ---------------- custom title block (NeurIPS-like) ----------------
 \makeatletter
@@ -98,11 +100,9 @@
 \title{GNN-Guided Meta-Path Retrieval for LLM Reasoning\\ in Drug Repurposing on Hetionet}
 
 \author{%
-  \begin{tabular}{c@{\hspace{2em}}c@{\hspace{2em}}c}
-    Jingwen Chen & Jingtao Wang & Shouyu Wang \\
-    Rice University & Rice University & Rice University \\
-    \texttt{jc380@rice.edu} & \texttt{jw306@rice.edu} & \texttt{sw188@rice.edu}
-  \end{tabular}%
+  Jingwen Chen\quad Jingtao Wang\quad Shouyu Wang\\[2pt]
+  {\small Rice University}\\[1pt]
+  {\small\texttt{\{jc380,\,jw306,\,sw188\}@rice.edu}}%
 }
 
 \date{COMP 559 --- Machine Learning with Graphs --- Spring 2026 Final Project}
@@ -311,35 +311,45 @@ Method & Accuracy & $95\%$ CI & vs \ours \\
 \end{tabular}
 \end{table}
 
-% ---- Figure 2: Per-method coloured bar chart
+% ---- Figure 2: Per-method coloured bar chart (numerical x to avoid clipping)
 \begin{figure}[t]
 \centering
 \begin{tikzpicture}
 \begin{axis}[
     width=\linewidth, height=0.34\textwidth,
-    ybar, ymin=0, ymax=1.02,
-    ylabel={Accuracy}, ylabel style={font=\small}, ytick={0,0.25,0.5,0.75,1.0},
-    ymajorgrids, grid style={dashed,gray!30},
-    symbolic x coords={{LLM-only},{GNN-only},{KGE (calib.)},{GNN-RAG+LLM (ours)}},
-    xtick=data, x tick label style={font=\small},
-    bar width=38pt, enlarge x limits=0.17,
+    ybar, ymin=0, ymax=1.0,
+    ylabel={Accuracy}, ylabel style={font=\small},
+    ytick={0,0.25,0.5,0.75,1.0},
+    ymajorgrids, grid style={dashed,gray!25},
+    xmin=0.3, xmax=4.7,
+    xtick={1,2,3,4},
+    xticklabels={\textsc{LLM-only},\textsc{GNN-only},\textsc{KGE} (calib.),\textsc{GNN-RAG+LLM} (ours)},
+    x tick label style={font=\small,align=center},
+    bar width=30pt,
     axis lines*=left,
     every axis plot/.append style={
         error bars/.cd, y dir=both, y explicit,
-        error bar style={line width=0.9pt,black!60}
+        error bar style={line width=0.9pt,black!55}
     },
-    nodes near coords, nodes near coords style={font=\scriptsize,/pgf/number format/.cd,fixed,precision=3},
+    nodes near coords, nodes near coords style={font=\scriptsize\bfseries,
+        /pgf/number format/.cd,fixed,precision=3},
 ]
 
-\addplot[ybar,fill=cLLM,draw=cLLM!60!black,bar width=38pt] coordinates {({LLM-only},0.553)    +- (0.080,0.080)};
-\addplot[ybar,fill=cGNN,draw=cGNN!60!black,bar width=38pt] coordinates {({GNN-only},0.727)    +- (0.074,0.066)};
-\addplot[ybar,fill=cKGE,draw=cKGE!60!black,bar width=38pt] coordinates {({KGE (calib.)},0.787)+- (0.067,0.066)};
-\addplot[ybar,fill=cOurs,draw=cOurs!70!black,bar width=38pt,
+\addplot[ybar,draw=cLLM!60!black,fill=cLLM]
+    coordinates {(1,0.553) +- (0.080,0.080)};
+\addplot[ybar,draw=cGNN!60!black,fill=cGNN]
+    coordinates {(2,0.727) +- (0.074,0.066)};
+\addplot[ybar,draw=cKGE!60!black,fill=cKGE]
+    coordinates {(3,0.787) +- (0.067,0.066)};
+\addplot[ybar,draw=cOurs!70!black,fill=cOurs,
          postaction={pattern=north east lines,pattern color=white}]
-  coordinates {({GNN-RAG+LLM (ours)},0.873) +- (0.060,0.047)};
+    coordinates {(4,0.873) +- (0.060,0.047)};
 
-\draw[dashed,red!60!black,line width=0.8pt] (axis cs:{LLM-only},0.5) -- (axis cs:{GNN-RAG+LLM (ours)},0.5);
-\node[red!60!black,font=\scriptsize,anchor=east] at (axis cs:{LLM-only},0.5) {chance\ \ };
+% chance reference line
+\draw[dashed,red!60!black,line width=0.8pt]
+    (axis cs:0.35,0.5) -- (axis cs:4.65,0.5);
+\node[red!65!black,font=\scriptsize,fill=white,inner sep=1pt]
+    at (axis cs:0.75,0.5) {chance};
 \end{axis}
 \end{tikzpicture}
 \caption{Accuracy and $95\%$ bootstrap CIs on the $N{=}150$ evaluation set. \ours (hatched, dark blue) strictly dominates every baseline, and all pairwise differences against it are significant under McNemar's test (Table~\ref{tab:main}). Red dashed line marks random-guess accuracy.}
