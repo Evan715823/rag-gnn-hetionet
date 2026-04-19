@@ -1,5 +1,7 @@
 # RAG-GNN on Hetionet
 
+![Pipeline overview](cover.png)
+
 COMP 559 课程项目：异构 GNN 检索子图 + LLM 生成推理。
 
 Pipeline：`Compound ←→ Disease` 链接预测，GNN 负责从 Hetionet 挖出 top-K 条元路径，语言化后喂给 Grok（xAI API），LLM 输出判别 + 自然语言解释。
