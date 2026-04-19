@@ -284,16 +284,20 @@ Table~\ref{tab:buckets} partitions all $150$ test predictions by which method(s)
 \begin{table}[t]
 \centering
 \small
-\caption{Error-analysis buckets over the $N{=}150$ test set.}
+\caption{Error-analysis buckets over the $N{=}150$ test set. Upper block compares \gnno vs.\ \ours; lower block compares \ours vs.\ \llmo to isolate the effect of retrieval.}
 \label{tab:buckets}
-\begin{tabular}{@{}lr@{\hspace{3em}}lr@{}}
+\begin{tabular}{@{}lr@{}}
 \toprule
-Bucket & Count & Bucket & Count \\
+Bucket & Count \\
 \midrule
-\gnno \& \ours both right          & 95 & retrieval helped (\ours over \llmo) & \textbf{61} \\
-\gnno wrong, \ours right (rescue)  & 36 & retrieval hurt   (\ours over \llmo) & 13 \\
-\gnno right, \ours wrong           & 14 & ratio                                 & $4.7\times$ \\
-Both wrong                         & 5  & & \\
+\gnno \& \ours both right                  & 95 \\
+\gnno wrong, \ours right (\emph{rescue})   & 36 \\
+\gnno right, \ours wrong                   & 14 \\
+Both wrong                                 & 5  \\
+\midrule
+Retrieval helped (\ours over \llmo)        & \textbf{61} \\
+Retrieval hurt   (\ours over \llmo)        & 13 \\
+Helped\,:\,hurt ratio                      & $4.7\times$ \\
 \bottomrule
 \end{tabular}
 \end{table}
