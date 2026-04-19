@@ -40,6 +40,12 @@
 \renewcommand{\baselinestretch}{1.02}
 
 % ---- title block ----------------------------------------------------------
+% Real NeurIPS \And command: ends current tabular column, starts next one.
+\newcommand{\And}{%
+  \end{tabular}\hfil\linebreak[0]\hfil
+  \begin{tabular}[t]{c}%
+}
+
 \renewcommand{\@maketitle}{%
   \newpage\null
   \vskip 1pt%
@@ -47,7 +53,9 @@
     \let\footnote\thanks
     {\LARGE\bfseries \@title\par}%
     \vskip 0.3in%
-    {\large \@author\par}%
+    \lineskip 0.5em%
+    {\large
+      \begin{tabular}[t]{c}\@author\end{tabular}\par}%
     \vskip 0.25in%
     \@date%
   \end{center}%
