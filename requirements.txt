@@ -1,0 +1,5 @@
+torch_geometric>=2.5.0
+networkx>=3.0
+requests>=2.31
+tqdm>=4.66
+anthropic>=0.39.0
