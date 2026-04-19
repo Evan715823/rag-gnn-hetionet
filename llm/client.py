@@ -4,9 +4,8 @@ import json
 import os
 import re
 from dataclasses import dataclass
-from typing import Any
 
-import anthropic
+import requests
 
 from llm.prompts import (
     JUDGE_SYSTEM_PROMPT,
@@ -15,7 +14,8 @@ from llm.prompts import (
     USER_PROMPT_TEMPLATE,
 )
 
-DEFAULT_MODEL = "claude-sonnet-4-6"
+DEFAULT_MODEL = "grok-4-fast-reasoning"
+API_URL = "https://api.x.ai/v1/chat/completions"
 
 
 @dataclass
@@ -26,7 +26,7 @@ class LLMResponse:
     raw: str
 
 
-def _parse_json(text: str) -> dict[str, Any]:
+def _parse_json(text: str) -> dict:
     m = re.search(r"\{.*\}", text, re.DOTALL)
     if not m:
         raise ValueError(f"no JSON object in response: {text[:200]!r}")
@@ -34,14 +34,36 @@ def _parse_json(text: str) -> dict[str, Any]:
 
 
 class LLMClient:
-    def __init__(self, model: str = DEFAULT_MODEL, api_key: str | None = None):
-        key = api_key or os.environ.get("ANTHROPIC_API_KEY")
+    def __init__(self, model: str = DEFAULT_MODEL, api_key: str | None = None, timeout: int = 180):
+        key = api_key or os.environ.get("XAI_API_KEY") or os.environ.get("GROK_API_KEY")
         if not key:
             raise RuntimeError(
-                "ANTHROPIC_API_KEY not set. Put it in environment or pass api_key=."
+                "XAI_API_KEY not set. Put it in environment (XAI_API_KEY=xai-...) or pass api_key=."
             )
-        self.client = anthropic.Anthropic(api_key=key)
+        self.api_key = key
         self.model = model
+        self.timeout = timeout
+
+    def _call(self, system: str, user: str, max_tokens: int = 600) -> str:
+        resp = requests.post(
+            API_URL,
+            headers={
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": self.model,
+                "messages": [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user},
+                ],
+                "max_tokens": max_tokens,
+                "temperature": 0.0,
+            },
+            timeout=self.timeout,
+        )
+        resp.raise_for_status()
+        return resp.json()["choices"][0]["message"]["content"]
 
     def predict(self, compound_name: str, compound_id: str,
                 disease_name: str, disease_id: str,
@@ -53,17 +75,7 @@ class LLMClient:
             disease_id=disease_id,
             paths_block=paths_block,
         )
-        resp = self.client.messages.create(
-            model=self.model,
-            max_tokens=max_tokens,
-            system=[{
-                "type": "text",
-                "text": SYSTEM_PROMPT,
-                "cache_control": {"type": "ephemeral"},
-            }],
-            messages=[{"role": "user", "content": user_text}],
-        )
-        raw = resp.content[0].text
+        raw = self._call(SYSTEM_PROMPT, user_text, max_tokens)
         try:
             parsed = _parse_json(raw)
         except Exception:
@@ -80,17 +92,7 @@ class LLMClient:
             paths_block=paths_block,
             rationale=rationale,
         )
-        resp = self.client.messages.create(
-            model=self.model,
-            max_tokens=max_tokens,
-            system=[{
-                "type": "text",
-                "text": JUDGE_SYSTEM_PROMPT,
-                "cache_control": {"type": "ephemeral"},
-            }],
-            messages=[{"role": "user", "content": user_text}],
-        )
-        raw = resp.content[0].text
+        raw = self._call(JUDGE_SYSTEM_PROMPT, user_text, max_tokens)
         try:
             return _parse_json(raw)
         except Exception:

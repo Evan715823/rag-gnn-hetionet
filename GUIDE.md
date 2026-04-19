@@ -29,7 +29,7 @@
 
 我们在做的事情：
 - 在 **Hetionet**（一张包含 47,031 个生物医学实体的异构知识图谱）上做 **drug repurposing**：预测哪个化合物能治哪个疾病。
-- 方法分四层：**异构 GNN** 学节点嵌入 → **元路径检索** 找到 Compound 到 Disease 的可解释路径 → **自然语言化** → **LLM (Claude)** 基于这些路径生成判别 + 解释。
+- 方法分四层：**异构 GNN** 学节点嵌入 → **元路径检索** 找到 Compound 到 Disease 的可解释路径 → **自然语言化** → **LLM (Grok via xAI API)** 基于这些路径生成判别 + 解释。
 - 对比四个方法：GNN-only、DistMult(KGE)、LLM-only（不给路径）、GNN-RAG+LLM（我们的方法）。
 - 指标：AUROC / AUPRC / Hits@K / 配对准确率 / LLM 解释忠实度。
 
@@ -48,7 +48,7 @@
 - [x] GNN 训练栈代码 + smoke test（6 epochs → AUROC **0.897**）
 - [x] DistMult KGE 基线代码 + smoke test（3 epochs → AUROC **0.8615**）
 - [x] 检索栈代码（已验证 Cholecalciferol → osteoporosis 的路径挖掘正确）
-- [x] LLM 接入层代码（Anthropic SDK 封装 + prompt caching）
+- [x] LLM 接入层代码（xAI Grok API 封装，requests）
 - [x] 主实验脚本（`main_results.py`，四方法对照 + McNemar + bootstrap CI）
 - [x] 错误分析脚本 + DDR1 case study + top-K ablation
 
@@ -58,7 +58,7 @@
 |---|---|---|---|---|
 | 1 | `python scripts/train_gnn.py --epochs 100 --ckpt checkpoints/gnn.pt` | ~10 分钟 | 否 | `gnn.pt` + 真实 AUROC |
 | 2 | `python scripts/train_kge.py --kge distmult --epochs 30 --ckpt checkpoints/distmult.pt` | ~10 分钟 | 否 | `distmult.pt` + baseline AUROC |
-| 3 | 注册 Anthropic 账号 + 充 $20 + 拿 API key | ~5 分钟 + $20 | — | env var 配好 |
+| 3 | 注册 xAI 账号 + 充 $20 + 拿 API key | ~5 分钟 + $20 | — | env var 配好 |
 | 4 | `python experiments/main_results.py --gnn-ckpt checkpoints/gnn.pt --kge-ckpt checkpoints/distmult.pt --n-pos 75 --n-neg 75 --judge` | ~15 分钟 + ~$5-8 | 是 | **主结果表** + JSONL |
 | 5 | `python experiments/ablation_k.py --ckpt checkpoints/gnn.pt --ks 0 1 3 5 10 --n-test 20 --n-neg 20` | ~10 分钟 + ~$2 | 是 | **top-K 曲线** |
 | 6 | `python experiments/error_analysis.py --file runs/main_results.jsonl` | 几秒 | 否 | **错误分桶表** + 定性 case |
@@ -73,17 +73,17 @@
 - 如果数字没涨反而掉，检查是否过拟合（early stop 已经在代码里：保留 val AUROC 最高的 checkpoint）
 
 **步骤 3（API key）**：
-- 去 https://console.anthropic.com 注册
+- 去 https://console.x.ai 注册 xAI 账号
 - 充值最少 $5（够主实验用），保险起见充 $20
-- 拿到 `sk-ant-xxxxx`，放到环境变量 `ANTHROPIC_API_KEY`
-- Windows cmd: `set ANTHROPIC_API_KEY=sk-ant-xxx`（只在当前会话有效）
+- 拿到 `xai-...` 开头的 key，放到环境变量 `XAI_API_KEY`
+- Windows cmd: `set XAI_API_KEY=xai-xxx`（只在当前会话有效）
 - 永久保存：Windows 系统属性 → 环境变量
 
 **步骤 4（主实验）**：
 - **最关键的一步**，这产生 report 里表 1 的所有数字
 - 跑之前先小跑一次验证：`--n-pos 5 --n-neg 5 --judge`，花不到 $1 看看有没有报错
 - 没问题再跑全量 N=150
-- 如果钱紧：加 `--model claude-haiku-4-5`，成本降到 1/10 但质量会下降
+- 如果钱紧：加 `--model grok-4-fast`，成本降到 1/10 但质量会下降
 
 **步骤 5（ablation）**：
 - 对每个 K 跑一次 N=40（20 正 + 20 负），总共 5 × 40 = 200 次 LLM 调用
@@ -103,7 +103,7 @@
 
 | 项 | 估算 |
 |---|---|
-| Claude Sonnet 4.6 主实验 | ~$6 |
+| Grok 4 Fast Reasoning 主实验 | ~$6 |
 | ablation_k | ~$2 |
 | DDR1 case + 小实验 | ~$1 |
 | 重跑补数据缓冲 | ~$3 |
@@ -151,7 +151,7 @@
 1. **GNN 编码器**：学每个节点（化合物、基因、疾病 ...）的 128 维向量
 2. **子图检索**：给一对 (compound, disease)，枚举所有长度 ≤3 的预定义元路径，按 GNN 嵌入相似度取 top-K
 3. **自然语言化**：把路径翻成英文，"Aspirin binds PTGS2, PTGS2 is associated with inflammation"
-4. **LLM 推理**：Claude 读路径，输出 JSON `{prediction, confidence, rationale}`
+4. **LLM 推理**：Grok 读路径，输出 JSON `{prediction, confidence, rationale}`
 
 ---
 
@@ -418,10 +418,10 @@ Prompt 结构（见 [llm/prompts.py](llm/prompts.py)）：
 └─────────────────────────────────────────────────────────────┘
                            ↓
 ┌─────────────────────────────────────────────────────────────┐
-│  阶段 4: Claude API                                         │
+│  阶段 4: Grok API (xAI)                                     │
 │  输入: compound name, disease name, paths 文本              │
 │  输出: JSON {prediction: yes/no, confidence, rationale}     │
-│  可选: 再调一次 Claude 做 faithfulness judge                │
+│  可选: 再调一次 Grok 做 faithfulness judge                  │
 └─────────────────────────────────────────────────────────────┘
                            ↓
                      最终预测 + 自然语言解释
@@ -468,7 +468,7 @@ Prompt 结构（见 [llm/prompts.py](llm/prompts.py)）：
 | 文件 | 作用 |
 |---|---|
 | [llm/prompts.py](llm/prompts.py) | System prompt（角色 + 输出 schema + 约束）、User prompt 模板、Judge prompt |
-| [llm/client.py](llm/client.py) | Anthropic SDK 封装。开启 prompt caching 省钱。提供 `predict()` 和 `judge_faithfulness()` |
+| [llm/client.py](llm/client.py) | xAI Grok API 封装（requests 直调）。提供 `predict()` 和 `judge_faithfulness()` |
 
 ### 6.5 脚本层
 
@@ -478,7 +478,7 @@ Prompt 结构（见 [llm/prompts.py](llm/prompts.py)）：
 | [scripts/train_gnn.py](scripts/train_gnn.py) | 训练异构 GNN 做 CtD 链接预测。`--epochs 100` 约 5-10 分钟 GPU |
 | [scripts/train_kge.py](scripts/train_kge.py) | 训练 DistMult 或 ComplEx baseline。`--epochs 30` 约 10 分钟 |
 | [scripts/eval_linkpred.py](scripts/eval_linkpred.py) | 只做 GNN 评测：AUROC / AUPRC / Hits@1/3/10 |
-| [scripts/run_rag_pipeline.py](scripts/run_rag_pipeline.py) | 早期版本的端到端：GNN + 检索 + Claude。主要实验用 main_results.py |
+| [scripts/run_rag_pipeline.py](scripts/run_rag_pipeline.py) | 早期版本的端到端：GNN + 检索 + Grok。主要实验用 main_results.py |
 
 ### 6.6 实验层
 
@@ -516,7 +516,7 @@ torch_geometric>=2.5.0
 networkx>=3.0
 requests>=2.31
 tqdm>=4.66
-anthropic>=0.39.0
+(只需 requests，anaconda base 已有)
 ```
 
 **注意**：不要重装 `torch`。Anaconda base 里已经是 PyTorch 2.8 dev + CUDA 12.8，够用了。
@@ -525,21 +525,21 @@ Mac/Linux 也是 `pip install -r requirements.txt`，没区别。
 
 ### 7.3 API Key 配置
 
-注册 Anthropic 账号拿 API key：https://console.anthropic.com
+注册 xAI 账号拿 API key：https://console.x.ai
 
 Windows cmd:
 ```cmd
-set ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxx
+set XAI_API_KEY=xai-xxxxxxxxxxxx
 ```
 
 Windows PowerShell:
 ```powershell
-$env:ANTHROPIC_API_KEY="sk-ant-xxxxxxxxxxxx"
+$env:XAI_API_KEY="xai-xxxxxxxxxxxx"
 ```
 
 macOS/Linux bash:
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxx
+export XAI_API_KEY=xai-xxxxxxxxxxxx
 ```
 
 永久保存：Windows 在"系统属性 → 环境变量"里加。macOS 写 `~/.zshrc`。
@@ -590,7 +590,7 @@ python scripts/eval_linkpred.py --ckpt checkpoints/gnn.pt
 ### 8.3 实验阶段（要 API key）
 
 ```bash
-set ANTHROPIC_API_KEY=sk-ant-xxx
+set XAI_API_KEY=xai-xxx
 
 # 主实验: 四方法对比, N=150 (75 正 + 75 负), 带 faithfulness judge
 python experiments/main_results.py ^
@@ -664,7 +664,7 @@ python experiments/case_study_ddr1.py --ckpt checkpoints/gnn.pt
 |---|---|---|
 | GNN-only | 0.80-0.85 | 小样本链接预测上限 |
 | DistMult | 0.75-0.82 | 纯 KGE 通常略弱于 GNN |
-| LLM-only (no retrieval) | 0.55-0.65 | Claude 对小众 compound 有限 |
+| LLM-only (no retrieval) | 0.55-0.65 | Grok 对小众 compound 知识有限 |
 | **GNN-RAG+LLM** | **0.85-0.92** | 应该是最高的 |
 
 McNemar：GNN-RAG+LLM vs LLM-only 应该 p < 0.001（检索显著有用）
@@ -674,13 +674,13 @@ faithfulness：应该 > 80%（prompt 约束起作用）
 
 | 项 | 次数 | 单价估算 | 小计 |
 |---|---|---|---|
-| 主实验（N=150 × 2 次 LLM 调用 + 可选 judge 150 次）| ≈ 450 | Claude Sonnet 4.6 ~$0.01/call (带 caching) | ~$5 |
+| 主实验（N=150 × 2 次 LLM 调用 + 可选 judge 150 次）| ≈ 450 | Grok 4 Fast Reasoning ~$0.01/call (带 caching) | ~$5 |
 | top-K 消融（5 个 K × 40 样本）| 200 | 同上 | ~$2 |
 | 重跑一次补数据 | - | - | ~$3 |
 | **合计** | | | **$10** |
 
 如果预算紧张：
-- 把 main_results.py 里的 Sonnet 换成 Haiku（`--model claude-haiku-4-5`），成本降 1/10
+- 把 main_results.py 里的 Sonnet 换成 Haiku（`--model grok-4-fast`），成本降 1/10
 - N 从 150 降到 100
 
 ---
@@ -749,7 +749,7 @@ faithfulness：应该 > 80%（prompt 约束起作用）
 - RAG-GNN (Hays & Richardson 2026) — 原提案的 [3]
 - DistMult (Yang 2015), ComplEx (Trouillon 2016)
 - GraphSAGE (Hamilton 2017)
-- Anthropic Claude (technical report)
+- Grok (xAI technical report)
 - Bertschinger et al. (2014) — 提案 [1]
 - Zheng et al. (2023) — 提案 [6]
 
@@ -807,17 +807,17 @@ A: 改 `--hidden 64`，或者用 CPU（`--device cpu`）。
 
 ### 12.3 API 坑
 
-**Q: `anthropic.AuthenticationError`**
-A: API key 没配对。`echo %ANTHROPIC_API_KEY%`（Windows cmd）确认能看到值。
+**Q: xAI API 401 / "Incorrect API key"**
+A: API key 没配对。`echo %XAI_API_KEY%`（Windows cmd）确认能看到值；或者 key 被 revoke 了，去 console.x.ai 重新建一个。
 
 **Q: `rate_limit_error`**
-A: Claude Sonnet 默认 5 req/min。脚本里已经是串行调用，一般没问题。如果还超，加 `time.sleep(1)` 在 llm.predict 调用之间。
+A: xAI 限流较宽松。脚本是串行调用，一般没问题。如果真触发，加 `time.sleep(1)` 在 llm.predict 调用之间。
 
 **Q: JSON 解析失败**
 A: llm/client.py 里 `_parse_json` 用正则抓第一个 `{...}` 块。如果 LLM 输出多了杂话，捕获异常后返回 "no" + confidence 0。偶尔失败几次不影响整体。
 
 **Q: API 花销失控**
-A: 改到 Haiku：`--model claude-haiku-4-5`，便宜 10 倍。或者减少 N。
+A: 改到 Haiku：`--model grok-4-fast`，便宜 10 倍。或者减少 N。
 
 ### 12.4 报告坑
 
@@ -825,7 +825,7 @@ A: 改到 Haiku：`--model claude-haiku-4-5`，便宜 10 倍。或者减少 N。
 A: 我们的主实验默认 75 正 + 75 负是 1:1 平衡的。accuracy 是合理的指标。如果想做更真实的 imbalanced 场景，加 `--n-neg 750` 做 1:10，改报 AUPRC。
 
 **Q: LLM-only accuracy 比预期高（不是 0.55 而是 0.80）**
-A: Claude 对常见药/病知识充足，可能对 drug name 就能识别出来。这反而能讲故事：小众化合物上 retrieval 的增益更大。在 report 里按 compound 的频次分层分析，"rare compound 上 retrieval 收益最大"。
+A: Grok 对常见药/病知识充足，可能对 drug name 就能识别出来。这反而能讲故事：小众化合物上 retrieval 的增益更大。在 report 里按 compound 的频次分层分析，"rare compound 上 retrieval 收益最大"。
 
 **Q: McNemar p 值很大（不显著）**
 A: 要么 N 不够（加到 N=200），要么方法之间本来就没差别（是信号，不是 bug，要在 Discussion 里讨论）。
@@ -873,7 +873,7 @@ python experiments/case_study_ddr1.py --ckpt checkpoints/gnn.pt
 | 负样本比例 | 1:1 | `train_gnn.py --neg-ratio` |
 | 检索 top-K | 5 | `main_results.py --top-k` |
 | 主实验 N | 75+75 | `main_results.py --n-pos --n-neg` |
-| LLM 模型 | claude-sonnet-4-6 | `--model` |
+| LLM 模型 | grok-4-fast-reasoning | `--model` |
 
 ---
 

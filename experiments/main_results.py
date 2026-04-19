@@ -97,7 +97,7 @@ def main():
     p.add_argument("--top-k", type=int, default=5)
     p.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
     p.add_argument("--out", type=str, default="runs/main_results.jsonl")
-    p.add_argument("--model", type=str, default="claude-sonnet-4-6")
+    p.add_argument("--model", type=str, default="grok-4-fast-reasoning")
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--judge", action="store_true")
     args = p.parse_args()

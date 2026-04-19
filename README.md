@@ -2,7 +2,7 @@
 
 COMP 559 课程项目：异构 GNN 检索子图 + LLM 生成推理。
 
-Pipeline：`Compound ←→ Disease` 链接预测，GNN 负责从 Hetionet 挖出 top-K 条元路径，语言化后喂给 Claude，LLM 输出判别 + 自然语言解释。
+Pipeline：`Compound ←→ Disease` 链接预测，GNN 负责从 Hetionet 挖出 top-K 条元路径，语言化后喂给 Grok（xAI API），LLM 输出判别 + 自然语言解释。
 
 ---
 
@@ -26,7 +26,7 @@ python scripts/train_kge.py --kge complex  --epochs 30 --ckpt checkpoints/comple
 python scripts/eval_linkpred.py --ckpt checkpoints/gnn.pt
 
 # 5. 设 API key（Windows cmd）
-set ANTHROPIC_API_KEY=sk-ant-xxx
+set XAI_API_KEY=xai-xxx
 
 # 6. 主实验：GNN-only vs LLM-only vs GNN-RAG+LLM (+ DistMult) 同批测试对，带 McNemar
 python experiments/main_results.py --gnn-ckpt checkpoints/gnn.pt --kge-ckpt checkpoints/distmult.pt --n-pos 75 --n-neg 75 --judge
@@ -62,7 +62,7 @@ rag-gnn-hetionet/
 │   └── verbalizer.py             # 路径 → 自然语言
 ├── llm/
 │   ├── prompts.py                # 系统 prompt + 判别 / 忠实度 prompt
-│   └── client.py                 # Anthropic SDK 封装（带 prompt caching）
+│   └── client.py                 # xAI Grok API 封装（requests）
 ├── scripts/
 │   ├── inspect_data.py
 │   ├── train_gnn.py              # 主训练
@@ -85,7 +85,7 @@ rag-gnn-hetionet/
 | 主任务 | `Compound-treats-Disease` 链接预测 | 755 条正样本，是经典 drug-repurposing benchmark |
 | 评测 | AUROC / AUPRC / Hits@1/3/10 | 全部跟 Rephetio 基线可比 |
 | 子图检索 | 8 条元路径枚举 + GNN cosine 相似度打分 | 避免路径爆炸，保留生物学语义 |
-| LLM | Claude Sonnet 4.6（可换） | 生物医学知识足够，带 prompt caching 省钱 |
+| LLM | Grok 4 Fast Reasoning（xAI API）| 生物医学推理能力充足，低成本 |
 | Prompt 结构 | 系统 + JSON schema 输出 | 可解析，`prediction / confidence / rationale` 三字段 |
 | Faithfulness 评测 | LLM-as-judge（第二次调用） | 检查 rationale 是否幻觉出了路径里没有的实体 |
 
@@ -114,14 +114,58 @@ rag-gnn-hetionet/
 
 ---
 
-## Smoke test 结果
+## 正式实验结果（N=150, 75 pos + 75 neg, 用 Grok-4-Fast-Reasoning）
 
-- 训练/验证/测试划分：605 / 75 / 75 条 `Compound-treats-Disease` 边
-- **GNN**（SAGEConv + to_hetero，6 epochs）test AUROC = **0.897**
-- **DistMult**（3 epochs）test AUROC = **0.8615**（有意义的基线差距）
-- 检索示例：Cholecalciferol (维生素 D3) → 骨质疏松，top-1 路径走 Ergocalciferol 结构相似链（生物学正确）
+### 链接预测 AUROC（train_gnn/train_kge stdout）
 
-正式训练（100 轮 GNN + 30 轮 KGE）AUROC 应能再涨几个点到 0.93-0.95。
+| 模型 | Test AUROC | Test AUPRC |
+|---|---|---|
+| GNN (SAGEConv + to_hetero, 100 epochs) | **0.908** | 0.578 |
+| DistMult (30 epochs) | 0.867 | 0.430 |
+
+### 主结果表（experiments/main_results.py + recompute_kge.py）
+
+| 方法 | Accuracy | 95% CI |
+|---|---|---|
+| **GNN-RAG + LLM (ours)** | **0.8733** | [0.81, 0.92] |
+| KGE (DistMult, calibrated) | 0.7867 | [0.72, 0.85] |
+| GNN-only | 0.7267 | [0.65, 0.79] |
+| LLM-only (no retrieval) | 0.5533 | [0.47, 0.63] |
+
+### McNemar 配对显著性
+
+- GNN-RAG+LLM **vs** LLM-only: p = 4.7 × 10⁻⁸ \*\*\*
+- GNN-RAG+LLM **vs** GNN-only: p = 0.003 \*\*
+- GNN-RAG+LLM **vs** KGE-calibrated: p = 0.04 \*
+
+### top-K Ablation（experiments/ablation_k.py, N=40）
+
+| K | Accuracy |
+|---|---|
+| 0 (LLM-only) | 0.525 |
+| 1 | 0.750 |
+| 3 | 0.800 |
+| **5** | **0.875** |
+| 10 | 0.825 |
+
+**K=5 为饱和点**。K=10 反而下降——过多路径稀释 LLM 注意力。
+
+### LLM Faithfulness
+
+解释忠实度：**52.3%**（n=107）——一半的 rationale 引入了路径外的实体。report 里的 Limitations 可以写。
+
+### 错误分析分桶（N=150）
+
+| 类别 | 数量 |
+|---|---|
+| 两者都对 | 95 |
+| GNN 错但 RAG+LLM 对（RAG 救场）| 36 |
+| GNN 对但 RAG+LLM 错 | 14 |
+| 两者都错 | 5 |
+| retrieval_helped | **61** |
+| retrieval_hurt | 13 |
+
+Retrieval 净收益 61 : 13 ≈ 4.7×。
 
 ---
 

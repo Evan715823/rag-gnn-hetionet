@@ -42,7 +42,7 @@ def main():
     p.add_argument("--n-neg", type=int, default=30)
     p.add_argument("--out", type=str, default="runs/rag_results.jsonl")
     p.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
-    p.add_argument("--model", type=str, default="claude-sonnet-4-6")
+    p.add_argument("--model", type=str, default="grok-4-fast-reasoning")
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--judge", action="store_true", help="also run faithfulness judge")
     args = p.parse_args()
