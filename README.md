@@ -49,17 +49,24 @@ python experiments/case_study_ddr1.py --ckpt checkpoints/gnn.pt
 
 ```
 rag-gnn-hetionet/
-├── cache/                        # Hetionet JSON 缓存
-├── checkpoints/                  # 训好的 GNN
-├── runs/                         # RAG pipeline 输出
+├── cover.png                     # 项目封面图（README 顶部使用）
+├── README.md                     # 本文件
+├── GUIDE.md                      # 给组员看的完整技术讲解 + 分工
+├── proposal.pdf                  # 原提案（含原版闭环 RL 构想）
+├── requirements.txt
+├── .env.example                  # XAI_API_KEY 模板
+├── cache/                        # Hetionet JSON 缓存（自动下载）
+├── checkpoints/                  # 训好的 GNN / KGE（不入库）
+├── runs/                         # RAG pipeline 输出（JSONL 入库）
 ├── data/
 │   ├── load_hetionet.py          # 下载 + 构图 (PyG HeteroData)
 │   └── splits.py                 # CtD 边训/验/测划分 + 负采样
 ├── models/
 │   ├── hetero_gnn.py             # SAGEConv + to_hetero 异构 GNN
-│   └── link_predictor.py         # 点积 / MLP 打分器
+│   ├── link_predictor.py         # 点积 / MLP 打分器
+│   └── kge.py                    # DistMult / ComplEx baseline
 ├── retrieval/
-│   ├── metapath.py               # 8 条预定义 Compound→Disease 元路径
+│   ├── metapath.py               # 9 条预定义 Compound→Disease 元路径
 │   ├── subgraph_extractor.py     # 路径枚举 + GNN 嵌入打分
 │   └── verbalizer.py             # 路径 → 自然语言
 ├── llm/
@@ -68,12 +75,24 @@ rag-gnn-hetionet/
 ├── scripts/
 │   ├── inspect_data.py
 │   ├── train_gnn.py              # 主训练
+│   ├── train_kge.py              # DistMult/ComplEx 训练
 │   ├── eval_linkpred.py          # AUROC / AUPRC / Hits@K
 │   └── run_rag_pipeline.py       # 端到端 GNN-RAG + LLM
 ├── experiments/
+│   ├── main_results.py           # 4 方法 + McNemar + bootstrap CI
+│   ├── recompute_kge.py          # KGE 阈值校准
 │   ├── ablation_k.py             # top-K 影响
+│   ├── error_analysis.py         # 6 桶错误分析
 │   └── case_study_ddr1.py        # DDR1 定性分析
-└── requirements.txt
+└── report/                       # 最终论文（NeurIPS 2020 格式）
+    ├── main.tex
+    ├── references.bib
+    ├── neurips_2020.sty
+    └── figures/
+        ├── make_figures.py       # matplotlib 生成 3 张图
+        ├── fig_pipeline.pdf
+        ├── fig_bars.pdf
+        └── fig_ablation.pdf
 ```
 
 ---
@@ -86,7 +105,7 @@ rag-gnn-hetionet/
 | 节点特征 | 可学习 `nn.Embedding` | Hetionet 没有节点属性，embedding 从头学 |
 | 主任务 | `Compound-treats-Disease` 链接预测 | 755 条正样本，是经典 drug-repurposing benchmark |
 | 评测 | AUROC / AUPRC / Hits@1/3/10 | 全部跟 Rephetio 基线可比 |
-| 子图检索 | 8 条元路径枚举 + GNN cosine 相似度打分 | 避免路径爆炸，保留生物学语义 |
+| 子图检索 | 9 条元路径枚举 + GNN cosine 相似度打分 | 避免路径爆炸，保留生物学语义 |
 | LLM | Grok 4 Fast Reasoning（xAI API）| 生物医学推理能力充足，低成本 |
 | Prompt 结构 | 系统 + JSON schema 输出 | 可解析，`prediction / confidence / rationale` 三字段 |
 | Faithfulness 评测 | LLM-as-judge（第二次调用） | 检查 rationale 是否幻觉出了路径里没有的实体 |
@@ -168,6 +187,20 @@ rag-gnn-hetionet/
 | retrieval_hurt | 13 |
 
 Retrieval 净收益 61 : 13 ≈ 4.7×。
+
+---
+
+## Final Report
+
+8 页 NeurIPS 2020 格式论文在 [`report/`](report/)。Overleaf 直接编译：
+
+1. New Project → Blank Project
+2. 上传整个 `report/` 目录（含 `main.tex` / `references.bib` / `neurips_2020.sty` / `figures/*.pdf`）
+3. Compiler 选 `pdfLaTeX` → Recompile
+
+包含章节：Abstract / Keywords / Introduction（带 *Main challenges* + *Position vs. concurrent work* + *Contributions*）/ Related Work / Method（含 Algorithm 1 RetrieveTopK pseudocode）/ Experiments / Case Study / Discussion / Limitations and Future Work / **Broader Impact**（NeurIPS 2020 强制）/ **Reproducibility** / Conclusion / Author contributions / References。
+
+所有主结果（N=150 四方法对比 / top-K 饱和曲线 / faithfulness 52.3% / DDR1 case）数字来自 [`runs/main_results_calibrated.jsonl`](runs/main_results_calibrated.jsonl) 和 [`runs/ablation_k.json`](runs/ablation_k.json)，可 `python experiments/error_analysis.py` 等直接复现。
 
 ---
 
