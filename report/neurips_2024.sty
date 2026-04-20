@@ -40,12 +40,8 @@
 \renewcommand{\baselinestretch}{1.02}
 
 % ---- title block ----------------------------------------------------------
-% Real NeurIPS \And command: ends current tabular column, starts next one.
-\newcommand{\And}{%
-  \end{tabular}\hfil\linebreak[0]\hfil
-  \begin{tabular}[t]{c}%
-}
-
+% The author block is built in main.tex out of 3 side-by-side tabulars,
+% so @maketitle does NOT wrap @author in an outer tabular.
 \renewcommand{\@maketitle}{%
   \newpage\null
   \vskip 1pt%
@@ -54,8 +50,7 @@
     {\LARGE\bfseries \@title\par}%
     \vskip 0.3in%
     \lineskip 0.5em%
-    {\large
-      \begin{tabular}[t]{c}\@author\end{tabular}\par}%
+    {\large \@author \par}%
     \vskip 0.25in%
     \@date%
   \end{center}%
