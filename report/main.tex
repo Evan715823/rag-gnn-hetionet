@@ -8,13 +8,16 @@
 % ---- colour (MUST be before tikz so [table] option takes) -----------------
 \usepackage[table,dvipsnames]{xcolor}
 
-% ---- official NeurIPS 2024 style (provided in report/neurips_2024.sty) ----
-\usepackage[preprint]{neurips_2024}
+% ---- NeurIPS 2020 style (provided in report/neurips_2020.sty) ------------
+% Course spec (call-for-projects.pdf) explicitly references 2020 style files.
+\usepackage[preprint]{neurips_2020}
 
 % ---- tables / math --------------------------------------------------------
 \usepackage{booktabs}
 \usepackage{multirow}
 \usepackage{array}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
 
 % ---- graphics -------------------------------------------------------------
 \usepackage{graphicx}
@@ -88,6 +91,9 @@ Our original proposal pursued a closed-loop variant in which a LLM judge would s
 \paragraph{Main challenges.}
 Delivering this pipeline exposed four challenges whose resolutions are the backbone of our method and experimental design: (C1) training a heterogeneous GNN on only $605$ supervised \ctd edges without collapsing on the long tail of rare compounds; (C2) designing a retriever that trades off meta-path diversity against prompt length in a way that a downstream LLM can actually exploit; (C3) calibrating a knowledge-graph-embedding baseline to a binary classification decision without access to a labelled calibration set; and (C4) evaluating LLM \emph{rationale quality} when the answer is correct but the reasoning may not be, a problem unique to retrieval-augmented systems and rarely addressed in the GraphRAG literature. Each is resolved in turn in \S\ref{sec:method}--\S\ref{sec:exp}.
 
+\paragraph{Position vs.\ concurrent work.}
+Three concurrent lines of work are closest to ours. \citet{mavromatis2024gnnrag} (GNN-RAG) fuse a ReaRev-style encoder with LLaMA-2 on knowledge-base question answering; they report no faithfulness audit and no per-example significance testing. \citet{hays2026raggnn} port the paradigm to biomedical precision medicine but keep the retriever static and report aggregate AUROC only, without paired statistical tests. \citet{sun2024tog} (Think-on-Graph) explores open-domain LLM reasoning over graphs but not under the accuracy--faithfulness tension. Our paper fills three gaps: (a) a publicly reproducible GraphRAG implementation on Hetionet with full per-case outputs; (b) the first application of paired McNemar testing to this architecture family; and (c) a quantitative faithfulness audit that turns a previously anecdotal concern into a $52.3\%$ hallucination baseline future work can attack.
+
 \paragraph{Contributions.}
 \begin{enumerate}[label=(\roman*)]
     \item An open-source, end-to-end GraphRAG pipeline for Hetionet combining heterogeneous GraphSAGE, meta-path subgraph retrieval, path verbalisation and Grok-based LLM reasoning (\S\ref{sec:method}).
@@ -149,6 +155,32 @@ s(p) = \frac{1}{L}\sum_{i=0}^{L-1} \cos\!\bigl(\mathbf{h}_{v_i},\,\mathbf{h}_{v_
 \label{eq:pathscore}
 \end{equation}
 The top-$K$ scoring paths are forwarded to the verbaliser. Eq.~\eqref{eq:pathscore} is the open-loop analogue of a learned retriever; \S\ref{sec:fut} discusses closing the loop.
+
+Algorithm~\ref{alg:retrieve} gives the full procedure. The forward-adjacency map $A[\cdot]$ is precomputed once from the heterogeneous \texttt{edge\_index} tensors ($O(|\mathcal{E}|)$ time, $O(|\mathcal{E}|)$ space), so each query thereafter costs $O(\sum_m b^{L_m})$ where $b$ is mean branching and $L_m$ is the length of meta-path $m$. In practice for $L{\le}3$ and $b{\approx}30$ this is fast enough to run on CPU.
+
+\begin{algorithm}[t]
+\small
+\caption{\textsc{RetrieveTopK}: cosine-scored meta-path subgraph retrieval}
+\label{alg:retrieve}
+\begin{algorithmic}[1]
+\Require query pair $(c,d)$; heterogeneous graph $\mathcal{G}$; embeddings $\{\mathbf{h}_v\}$; meta-path set $\mathcal{M}$; budget $K$
+\Ensure ranked list of top-$K$ paths
+\State $A\gets \textsc{BuildForwardAdjacency}(\mathcal{G})$ \Comment{precomputed once}
+\State $\mathcal{P}\gets [\,]$
+\ForAll{$m\in\mathcal{M}$ with edge-type sequence $(e_1,\ldots,e_L)$}
+  \State $F\gets\{(c,)\}$ \Comment{BFS frontier of partial paths}
+  \For{$\ell=1,\ldots,L$}
+    \State $F\gets\{\,(v_0,\ldots,v_\ell)\;:\;(v_0,\ldots,v_{\ell-1})\in F,\;v_\ell\in A[e_\ell][v_{\ell-1}]\,\}$
+  \EndFor
+  \ForAll{$p=(v_0,\ldots,v_L)\in F$ with $v_L=d$}
+    \State $s(p)\gets \frac{1}{L}\sum_{i=0}^{L-1}\cos(\mathbf{h}_{v_i},\mathbf{h}_{v_{i+1}})$
+    \State append $(p,s(p),m)$ to $\mathcal{P}$
+  \EndFor
+\EndFor
+\State sort $\mathcal{P}$ by $s(p)$ descending
+\State \Return first $K$ entries of $\mathcal{P}$
+\end{algorithmic}
+\end{algorithm}
 
 \begin{table}[t]
 \centering
@@ -330,6 +362,20 @@ The present study has four main limitations, each of which points to a specific 
     \item \textbf{No text-enriched node features.} \citet{hays2026raggnn} encode PubMed abstracts with BioBERT~\citep{lee2020biobert} to obtain node features; our embeddings are learnt from scratch. Injecting BioBERT features would couple the LLM and GNN knowledge more tightly and likely improve both \gnno and \ours.
     \item \textbf{Scale.} PrimeKG~\citep{chandak2022primekg}, $2.7\times$ larger than Hetionet, would stress-test the saturation phenomenon and the judge's scalability. We view this as the clearest path to a top-venue submission.
 \end{enumerate}
+
+% ====================================================================
+\section{Broader Impact}
+\label{sec:impact}
+
+Drug repurposing is widely regarded as the cheapest and fastest path to new therapies for neglected and rare diseases; a reliable GraphRAG system that both predicts and \emph{justifies} candidate compounds could meaningfully shorten this path, particularly for conditions where prospective trials are prohibitive. Our pipeline is fully open-source and uses a public benchmark (Hetionet), removing one barrier to entry for small academic groups or low-resource settings. Positive externalities therefore include democratised access to interpretable drug-repurposing tooling and a transparent baseline against which future closed-loop systems can be compared.
+
+We are, however, explicit about three risks. First, our $52.3\%$ faithfulness rate (\S\ref{sec:exp:faith}) means that almost half of the natural-language rationales contain entities or mechanistic claims that the retrieved subgraph does not support; \emph{any} downstream use that confuses a plausible explanation with a verified one is unsafe. Second, Hetionet is a snapshot, not ground truth: biases in the underlying databases (e.g., the over-representation of well-studied proteins) propagate into predictions and can amplify existing research inequities across diseases. Third, LLM-based reasoning is non-deterministic and subject to training-data drift; reported accuracies may not be reproducible as the hosted Grok model is updated. For all of these reasons, the pipeline is intended as a \emph{hypothesis-generation} tool, not a clinical recommender, and any translational use must be accompanied by expert curation and wet-lab validation.
+
+% ====================================================================
+\section{Reproducibility}
+\label{sec:reproducibility}
+
+All experiments use fixed random seeds (GNN split seed $42$; training seed $42$; bootstrap seed $0$). Hetionet is downloaded directly from the official GitHub release at load time (SHA-pinned via a caching wrapper). Hyperparameters are documented in \S\ref{sec:method:gnn} and \S\ref{sec:exp} and duplicated in \texttt{scripts/train\_gnn.py} / \texttt{scripts/train\_kge.py} argparse defaults. The full $N{=}150$ per-case JSONL (including every LLM rationale and judge decision) and the \texttt{ablation\_k.json} output are shipped in the \texttt{runs/} directory of the public repository, so the main-results and error-analysis tables can be regenerated offline without an API key by running \texttt{experiments/error\_analysis.py} and \texttt{experiments/recompute\_kge.py}. Confidence intervals are from $2{,}000$ bootstrap resamples. The only non-deterministic component is the Grok LLM; to mitigate this we set \texttt{temperature}\,$=0$, but we acknowledge that hosted-model updates may shift future reproductions by several percentage points.
 
 % ====================================================================
 \section{Conclusion}
